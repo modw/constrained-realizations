@@ -1,4 +1,4 @@
-# messenger method (mm) constrained realizations)
+# messenger method (mm) constrained realizations
 
 import numpy as np
 import healpy as hp
