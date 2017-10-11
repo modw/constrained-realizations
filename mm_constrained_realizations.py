@@ -47,11 +47,15 @@ class ConstrainedRealizations:
                               self.mask.mask, self.params.pix_area)
 
     def set_cooling_schedule(self, lamb_0, target_precision, eta=3/4):
+        """Set initial parameters to obtain cooling schedule under atribute .cs.
+        """
         self.cs = sc.CoolingSchedule(lamb_0, eta)
         self.cs.set_precision_schedule(target_precision)
 
     # cooling methods/functions
     def gen_delta(self):
+        """Generate one fluctuation field delta making use of already set
+        parameters and covariances."""
         delta = self.delta.gen_delta(self.mask.good_pix, self.mask.bad_pix,
                                      self.params.nside, self.params.npix)
         return delta
