@@ -60,7 +60,18 @@ class ConstrainedRealizations:
                                      self.params.nside, self.params.npix)
         return delta
 
-    def do_transform(self, delta, tlm, lamb):
+    def solve_flm(self, tlm, delta, lamb, target_precision, wf = False):
+        """Solve for flm for a specific delta, lambda and target precision"""
+        flm = np.ones(len(tlm))
+        while True:
+            flm_i = np.copy(flm)
+            flm, tlm = self.do_transform(delta, tlm, lamb, wf)
+            conv = np.linalg.norm(flm-flm_i, ord=2)\
+                / np.linalg.norm(flm_i, ord=2)
+            if conv < target_precision:
+                return flm, tlm
+
+    def do_transform(self, delta, tlm, lamb, wf = False):
         """Do one iteration of the basis transform for the wiener filter"""
         sl, tau, noise_cov = \
             self.signal_cov.signal_cov, self.noise_cov.tau, \
@@ -69,21 +80,18 @@ class ConstrainedRealizations:
         weights_map = self.weights_map
         pix_area, lmax, nside = self.params.pix_area, self.params.lmax, \
             self.params.nside
-        flm, tlm = \
-            field_trnsfrm(delta, tlm, lamb, sl, tau, noise_cov, good_pix,
-                          bad_pix, weights_map, pix_area, lmax, nside)
+
+        if wf:
+            flm, tlm = \
+                wf_field_trnsfrm(delta, tlm, lamb, sl, tau, noise_cov, good_pix,
+                                 bad_pix, weights_map, pix_area, lmax, nside)
+        else:
+            flm, tlm = \
+                field_trnsfrm(delta, tlm, lamb, sl, tau, noise_cov, good_pix,
+                              bad_pix, weights_map, pix_area, lmax, nside)
         return flm, tlm
 
-    def solve_flm(self, tlm, delta, lamb, target_precision):
-        """Solve for flm for a specific delta, lambda and target precision"""
-        flm = np.ones(len(tlm))
-        while True:
-            flm_i = np.copy(flm)
-            flm, tlm = self.do_transform(delta, tlm, lamb)
-            conv = np.linalg.norm(flm-flm_i, ord=2)\
-                / np.linalg.norm(flm_i, ord=2)
-            if conv < target_precision:
-                return flm, tlm
+
 
     def gen_constrained_realization(self, delta_fix=None):
         """Generate one fluctation field, which added to a wiener filtered map
@@ -101,6 +109,20 @@ class ConstrainedRealizations:
         for i in range(len(lamb_list)):
             flm, tlm = self.solve_flm(tlm, delta, lamb_list[i], eps_list[i])
         return flm
+
+    def wiener_filter_data(self, data):
+        """Outputs wiener filtered data, done with the messenger method, given the input
+        data."""
+        # set up fields
+        t = np.copy(data)
+        t[self.mask.good_pix] *= self.weights_map[self.mask.good_pix]
+        tlm = hp.map2alm(t, self.params.lmax, iter=0)
+        # get cooling schedule
+        lamb_list = self.cs.lamb_list
+        eps_list = self.cs.eps_list
+        for i in range(len(lamb_list)):
+            xlm, tlm = self.solve_flm(tlm, data, lamb_list[i], eps_list[i], wf = True)
+        return xlm
 
     # helper functions
     def check_nside(self, m):
@@ -122,3 +144,19 @@ def field_trnsfrm(delta, tlm, lamb, sl, tau, noise_cov, good_pix, bad_pix,
                                                    (lamb-1)*tau)
     tlm = hp.map2alm(t*weights_map, lmax, iter=0)
     return flm, tlm
+
+
+def wf_field_trnsfrm(data, tlm, lamb, sl, tau, noise_cov, good_pix, bad_pix,
+                     weights_map, pix_area, lmax, nside):
+    """Transforms messenger field to pixel space and back given data and
+    cooling schedule parameters"""
+    xlm = (sl*tlm)/(sl+lamb*pix_area*tau)
+    x = hp.alm2map(xlm, nside, lmax, verbose=False)
+    t = np.zeros(hp.nside2npix(nside))
+    t[bad_pix] = x[bad_pix]
+    t[good_pix] = \
+        (lamb*tau*data[good_pix] +
+         (noise_cov[good_pix] - tau)*x[good_pix])/(noise_cov[good_pix] +
+                                                   (lamb-1)*tau)
+    tlm = hp.map2alm(t*weights_map, lmax, iter=0)
+    return xlm, tlm

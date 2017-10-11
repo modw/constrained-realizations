@@ -51,7 +51,7 @@ class CoolingSchedule:
 
     def set_lambda_schedule(self, lamb_0, eta):
         """
-        Get whole lambda> list by multiplying lamb_0 by powers of eta.
+        Get whole lambda list by multiplying lamb_0 by powers of eta.
         """
         self.lamb_0 = lamb_0
         self.eta = eta
