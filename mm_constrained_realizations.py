@@ -27,10 +27,14 @@ class ConstrainedRealizations:
         except:
             pass
 
-    def set_signal_cov(self, cl):
+    def set_signal_cov(self, cl, fwhm = None):
         """Set signal cov from Cls and assignt quantities to .signal_cov
         atribute"""
-        self.signal_cov = sc.SignalCov(cl, self.params.lmax)
+        if fwhm is not None:
+            bl = hp.gauss_beam(fwhm,lmax=len(cl)-1)
+            self.signal_cov = sc.SignalCov(bl**2 * cl, self.params.lmax)
+        else:
+            self.signal_cov = sc.SignalCov(cl, self.params.lmax)
         try:
             self.set_delta()
         except:
