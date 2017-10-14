@@ -11,11 +11,11 @@ nside = 64
 
 # maps
 
-weights_map = hp.read_map('Commander-Ruler/input_files/full_weights_map_08_0064.fits')
+weights_map = hp.read_map('Commander-Ruler/input_files/full_weights_map_08_0064.fits', verbose=False)
 cl = np.load('Commander-Ruler/input_files/cls_PlanckPR2_TT_lowp_lensing_lensed.npy')
-tmap = hp.read_map('Commander-Ruler/input_files/commander_t_map.fits')
-noise_cov = hp.read_map('Commander-Ruler/input_files/commander_noise_cov.fits')
-mask = hp.read_map('Commander-Ruler/input_files/commander_mask.fits')
+tmap = hp.read_map('Commander-Ruler/input_files/commander_t_map.fits', verbose=False)
+noise_cov = hp.read_map('Commander-Ruler/input_files/commander_noise_cov.fits', verbose=False)
+mask = hp.read_map('Commander-Ruler/input_files/commander_mask.fits', verbose=False)
 
 ### initializing CR
 cr = mmcr.ConstrainedRealizations(nside,weights_map,mask=mask)
