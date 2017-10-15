@@ -111,10 +111,11 @@ class ConstrainedRealizations:
         return flm
 
     def wiener_filter_data(self, data):
-        """Outputs wiener filtered data, done with the messenger method, given the input
-        data."""
+        """Outputs wiener filtered data in ell space, done with the messenger
+        method, given the input data."""
         # set up fields
         t = np.copy(data)
+        t[self.mask.bad_pix] = hp.UNSEEN
         t[self.mask.good_pix] *= self.weights_map[self.mask.good_pix]
         tlm = hp.map2alm(t, self.params.lmax, iter=0)
         # get cooling schedule
